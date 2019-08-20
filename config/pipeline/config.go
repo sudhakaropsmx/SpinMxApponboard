@@ -7,11 +7,11 @@ type PipelineConfig struct {
 	PipelineName string `yaml:"pipelinename"`
 	Application string `yaml:"application"`
 	TemplateReference string  `yaml:"pipelinetemplatename"`
-    Variables interface{}  `yaml:"variables"`
-    Triggers []interface{} `yaml:"triggers"`
-    ExpectedArtifacts []interface{} `yaml:"expectedArtifacts"`   
-    Notifications []interface{} `yaml:"notifications"`
+    Variables map[string]interface{}  `yaml:"variables"`
+    Triggers []map[string]interface{} `yaml:"triggers"`
+    ExpectedArtifacts []map[string]interface{} `yaml:"expectedArtifacts"`   
+    Notifications []map[string]interface{} `yaml:"notifications"`
     Description string `yaml:"description"`
-    Stages  []interface{} `yaml:"stages"`
-    Parameters  []interface{} `yaml:"parameters"`
+    Stages  []map[string]interface{} `yaml:"stages"`
+    Parameters  []map[string]interface{} `yaml:"parameters"`
 }

@@ -5,6 +5,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/sudhakaropsmx/spinmx/cmd/apponboard"
+	"github.com/spinnaker/spin/cmd/application"
 	"github.com/spinnaker/spin/cmd/pipeline"
 	"github.com/spinnaker/spin/cmd/pipeline-template"
 	"github.com/spinnaker/spin/cmd/project"
@@ -46,6 +47,7 @@ func NewCmdRoot(out io.Writer) *cobra.Command {
 
 	// create subcommands
 	cmd.AddCommand(apponboard.NewAppOnboardCmd(out))
+	cmd.AddCommand(application.NewApplicationCmd(out))
 	cmd.AddCommand(pipeline.NewPipelineCmd(out))
 	cmd.AddCommand(pipeline_template.NewPipelineTemplateCmd(out))
 	cmd.AddCommand(project.NewProjectCmd(out))

@@ -21,11 +21,16 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	//"strings"
 	"text/template"
+	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/cobra"
 	"github.com/spinnaker/spin/cmd/gateclient"
 	"github.com/spinnaker/spin/util"
 	pconfig "github.com/sudhakaropsmx/spinmx/config/pipeline"
+	appconfig "github.com/sudhakaropsmx/spinmx/config/application"
+	capi "github.com/sudhakaropsmx/spinmx/complianceapi"
+	
 	"gopkg.in/yaml.v2"
 	
 )
@@ -84,7 +89,7 @@ func getCreatePipeline(cmd *cobra.Command, options CreatePipelineOptions) error 
 	application := pipelineConfig.Application
 	pipelineName := pipelineConfig.PipelineName
 	pipelinetemplatename := pipelineConfig.TemplateReference
-	
+
 	if  pipelineName == "" {
 		util.UI.Error("Required pipeline key 'name' missing...\n")
 		valid = false
@@ -102,7 +107,11 @@ func getCreatePipeline(cmd *cobra.Command, options CreatePipelineOptions) error 
 		return fmt.Errorf("Submitted pipeline is invalid data: \n")
 	}
 	
-
+	flag, err := checkApplicationAuthorized(gateClient, application)
+	if flag {
+	  return err
+	}
+    //return nil
 	foundPipeline, queryResp, _ := gateClient.ApplicationControllerApi.GetPipelineConfigUsingGET(gateClient.Context, application, pipelineName)
 
 	if queryResp.StatusCode != http.StatusOK {
@@ -120,11 +129,11 @@ func getCreatePipeline(cmd *cobra.Command, options CreatePipelineOptions) error 
 	    return fmt.Errorf("Encountered an error saving pipeline, pipeline template does't exist : %d\n",pipelinetemplatename)
     }
     if queryErr != nil {
+    	fmt.Errorf("Encountered an error saving pipeline : %s\n",queryErr)
         return queryErr
      }
 	
-	//pipelineJsonStr := `{"schema":"v2","name":"{{.PipelineName}}","application":"{{.Application}}","template":{"source":"spinnaker://{{.TemplateReference}}:latest"},"type":"templatedPipeline","variables":{"account": "dev-kube-v2-account","cloudprovider": "kubernetes","containerimage": "docker.io/opsmx11/restapp:restapp-test-1.0","containername": "restapp","manifest-namespace": "sudhakar","replicas": 1},“triggers”: }`
-	pipelineJsonStr := `{"schema":"v2","name":"{{.PipelineName}}","application":"{{.Application}}","template":{"source":"spinnaker://{{.TemplateReference}}:latest"},"type":"templatedPipeline"}`
+	pipelineJsonStr := `{"schema":"v2","name":"{{.PipelineName}}","application":"{{.Application}}","template":{"artifactAccount": "front50ArtifactCredentials","reference":"spinnaker://{{.TemplateReference}}","type": "front50/pipelineTemplate"},"type":"templatedPipeline"}`
 	
 	// Create a new template and parse the pipelineJsonStr into it.
 	t := template.Must(template.New("pipelineJsonStr").Parse(pipelineJsonStr))
@@ -134,9 +143,10 @@ func getCreatePipeline(cmd *cobra.Command, options CreatePipelineOptions) error 
 	err = t.Execute(&pipelineJsonbuf, pipelineConfig)
 	if err != nil {
 		fmt.Println("executing template:", err)
+		return err
 	}
 	
-	var pipelineJsonMap map[string]interface{}
+	pipelineJsonMap := make(map[string]interface{})
 	
 	convertErr := json.Unmarshal(pipelineJsonbuf.Bytes(), &pipelineJsonMap)
 
@@ -160,11 +170,9 @@ func getCreatePipeline(cmd *cobra.Command, options CreatePipelineOptions) error 
 	if len(pipelineConfig.Parameters) >0{
 		pipelineJsonMap["parameters"] = pipelineConfig.Parameters
 	}
-	for key, value := range pipelineJsonMap {
-      fmt.Println("index : ", key, " value : ", value)
-     }
-	return convertErr
-	
+	jsonString, err := json.Marshal(pipelineJsonMap)
+    fmt.Println("Pipeline :\n",string(jsonString))
+    
 	saveResp, saveErr := gateClient.PipelineControllerApi.SavePipelineUsingPOST(gateClient.Context, pipelineJsonMap)
 
 	if saveErr != nil {
@@ -178,5 +186,56 @@ func getCreatePipeline(cmd *cobra.Command, options CreatePipelineOptions) error 
 	util.UI.Info(util.Colorize().Color(fmt.Sprintf("[reset][bold][green]Pipeline save succeeded")))
   	return nil
 }
+func checkApplicationAuthorized(gateClient *gateclient.GatewayClient,application string) (bool,error) { 
+    
+    app, resp, err := gateClient.ApplicationControllerApi.GetApplicationUsingGET(gateClient.Context, application, map[string]interface{}{"expand": false})
+	
+	if resp != nil {
+		if resp.StatusCode == http.StatusNotFound {
+			return true, fmt.Errorf("Application '%s' not found\n", application)
+		} else if resp.StatusCode != http.StatusOK {
+		   return true, fmt.Errorf("Encountered an error getting application, status code: %d\n", resp.StatusCode)
+		}
+	}
+
+	if err != nil {
+		return true, fmt.Errorf("Encountered an error getting application %d\n",err)
+	} 
+	prettyStr, _ := json.MarshalIndent(app["attributes"], "", " ")
+    appdata := make(map[string]interface{})
+    err = json.Unmarshal(prettyStr, &appdata)
+    applicationConfig := &appconfig.AplicationConfig{}
+    mapstructure.Decode(appdata, &applicationConfig)
+    var write []string  
+    write = applicationConfig.Permissions.Write
+    var execute []string  
+    execute = applicationConfig.Permissions.Execute
+    groups := append(write, execute...)
+    fmt.Printf("Application Groups: %s \n",groups)    
+    input := make(map[string]interface{})
+    input["User"] = gateClient.Config.Auth.Basic.Username
+    input["Groups"] = groups
+    data, resp, err := capi.CheckApplicationAccess(input)
+   
+    if err != nil {
+		return true, fmt.Errorf("Error encountered in compliance API %s \n",err)
+	} 
+
+   if resp.StatusCode != http.StatusOK {
+		return true, fmt.Errorf("Encountered an error in Compliance API pipeline")
+	}
+     
+    prettyStra, _ := json.MarshalIndent(data, "", " ")
+    compData := make(map[string]interface{})
+    err = json.Unmarshal(prettyStra, &compData)
+    jsonString, err := json.Marshal(compData["UserGroupRepositories"])
+    fmt.Println(string(jsonString))
+    if string(jsonString) == "null" {
+      return true, fmt.Errorf("Does not have acces to create pipeline in the application %s \n",application)
+    }
+   
+    return false, nil
+}
+
 	
 

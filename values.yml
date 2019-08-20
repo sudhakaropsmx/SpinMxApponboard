@@ -9,29 +9,29 @@ variables:
   manifest-namespace: sudhakar
   replicas: 1
 triggers:
-  - account: "my-docker-registry"
+  - account: my-docker-registry
     enabled: true
-    organization: "opsmx11"
-    registry: "index.docker.io"
-    repository: "opsmx11/restapp"
-    type: "docker"
-  - account: "my-docker-registry1"
+    organization: opsmx11
+    registry: index.docker.io
+    repository: opsmx11/restapp
+    type: docker
+  - account: my-docker-registry1
     enabled: true
-    organization: "opsmx112"
-    registry: "index.docker.io"
-    repository: "opsmx11/restapp"
-    type: "docker"
+    organization: opsmx112
+    registry: index.docker.io
+    repository: opsmx11/restapp
+    type: docker
 expectedArtifacts: 
   - defaultArtifact: 
-      name: "deploys/blue-green.yml"
-      reference: "https://api.github.com/repos/OpsMx/restapp/contents/deploys/blue-green.yml"
-      type: "github/file"
-      version: "master"        
-    displayName": "blue-green"
-    id: "7025fd70-9e66-4da1-878d-beb60cc22c93"
+      name: deploys/blue-green.yml
+      reference: https://api.github.com/repos/OpsMx/restapp/contents/deploys/blue-green.yml
+      type: github/file
+      version: master        
+    displayName: blue-green
+    id: 7025fd70-9e66-4da1-878d-beb60cc22c93
     matchArtifact: 
-      name: "deploys/blue-green.yml"
-      type: "github/file"
+      name: deploys/blue-green.yml
+      type: github/file
     useDefaultArtifact: true
     usePriorArtifact: false
      
