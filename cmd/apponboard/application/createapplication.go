@@ -98,7 +98,7 @@ func getCreateApplication(cmd *cobra.Command, options CreateApplicationOptions) 
 			taksApp := map[string]interface{}{
 				"accounts": app.Accounts,
 				"name":    app.Name,
-				."email":  app.OwnerEmail,
+				"email":  app.OwnerEmail,
 				"permissions": permissionsMap,
 			}
 			jsonString, err := json.Marshal(taksApp)
