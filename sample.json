@@ -1,0 +1,30 @@
+{
+  "schema": "v2",
+  "application": "my-app-boarding1", 
+  "name": "DockerTriggerSample",  
+  "template": {  
+  "artifactAccount": "front50ArtifactCredentials",
+    "reference": "spinnaker://pipeline-template-plan-to-deploy-v2",
+	 "type": "front50/pipelineTemplate"
+  },  
+  "variables": {
+    "cloudProviderAccount": "dev-kube-v2-account",
+    "cloudProviderName": "kubernetes",
+    "containerImage": "docker.io/opsmx11/restapp:restapp-test-1.0",
+    "containerImageName": "restapp",
+    "manifestsNameSpace": "sudhakar",
+	"manifestsName": "simple",
+	"replicas": "1"  
+  },
+  "triggers": [   
+   {
+        "account": "my-docker-registry",
+        "enabled": true,
+        "organization": "opsmx11",
+        "registry": "index.docker.io",
+        "repository": "opsmx11/restapp",
+        "type": "docker"
+    }
+   
+  ]
+}

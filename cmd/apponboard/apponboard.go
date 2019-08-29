@@ -4,6 +4,7 @@ import (
 	"github.com/spf13/cobra"
 	"io"
 	"github.com/sudhakaropsmx/spinmx/cmd/apponboard/pipeline"
+	"github.com/sudhakaropsmx/spinmx/cmd/apponboard/application"
 )
 
 type apponboardOptions struct{}
@@ -25,5 +26,6 @@ func NewAppOnboardCmd(out io.Writer) *cobra.Command {
 	}  
 	// create subcommands
 	cmd.AddCommand(pipeline.NewPipelineCmd(out))
+	cmd.AddCommand(application.NewApplicationCmd(out))
 	return cmd
 }

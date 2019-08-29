@@ -14,7 +14,7 @@ type InputJson struct{
 func CheckApplicationAccess(input interface{}) (interface{}, *http.Response,error)  {
 	var successPayload  interface{}
     
-    fmt.Println("Starting the application...")
+    //fmt.Println("Starting the application...")
     
     response, err := http.Get("http://localhost:8000/")
     if err != nil {
@@ -26,7 +26,7 @@ func CheckApplicationAccess(input interface{}) (interface{}, *http.Response,erro
     }
 
     jsonValue, _ := json.Marshal(input)
-    response, err = http.Post("http://localhost:8000/api/getAppAuthorized", "application/json", bytes.NewBuffer(jsonValue))
+    response, err = http.Post("http://localhost:8000/api/getUserAppAuthorized", "application/json", bytes.NewBuffer(jsonValue))
     
     if err != nil {
         fmt.Println("The HTTP request failed with error %s\n", err)

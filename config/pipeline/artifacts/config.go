@@ -1,6 +1,0 @@
-package artifacts
-
-import (
-
-)
-

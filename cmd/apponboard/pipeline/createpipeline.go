@@ -23,12 +23,12 @@ import (
 	"os"
 	//"strings"
 	"text/template"
-	"github.com/mitchellh/mapstructure"
+	//"github.com/mitchellh/mapstructure"
 	"github.com/spf13/cobra"
 	"github.com/spinnaker/spin/cmd/gateclient"
 	"github.com/spinnaker/spin/util"
 	pconfig "github.com/sudhakaropsmx/spinmx/config/pipeline"
-	appconfig "github.com/sudhakaropsmx/spinmx/config/application"
+	//appconfig "github.com/sudhakaropsmx/spinmx/config/application"
 	capi "github.com/sudhakaropsmx/spinmx/complianceapi"
 	
 	"gopkg.in/yaml.v2"
@@ -170,6 +170,13 @@ func getCreatePipeline(cmd *cobra.Command, options CreatePipelineOptions) error 
 	if len(pipelineConfig.Parameters) >0{
 		pipelineJsonMap["parameters"] = pipelineConfig.Parameters
 	}
+	//for key, value := range pipelineJsonMap {
+    //  fmt.Println("index : ", key, " value : ", value)
+	//}
+	
+	//saveResp, saveErr := gateClient.PipelineControllerApi.SavePipelineUsingPOST(gateClient.Context, pipelineJsonMap)
+
+	//return nil
 	jsonString, err := json.Marshal(pipelineJsonMap)
     fmt.Println("Pipeline :\n",string(jsonString))
     
@@ -187,20 +194,22 @@ func getCreatePipeline(cmd *cobra.Command, options CreatePipelineOptions) error 
   	return nil
 }
 func checkApplicationAuthorized(gateClient *gateclient.GatewayClient,application string) (bool,error) { 
-    
-    app, resp, err := gateClient.ApplicationControllerApi.GetApplicationUsingGET(gateClient.Context, application, map[string]interface{}{"expand": false})
-	
+  
+    _, resp, err := gateClient.ApplicationControllerApi.GetApplicationUsingGET(gateClient.Context, application, map[string]interface{}{"expand": false})
+    //fmt.Errorf(resp)
 	if resp != nil {
 		if resp.StatusCode == http.StatusNotFound {
+			//fmt.Printf("Application '%s' not found\n", app)
 			return true, fmt.Errorf("Application '%s' not found\n", application)
-		} else if resp.StatusCode != http.StatusOK {
-		   return true, fmt.Errorf("Encountered an error getting application, status code: %d\n", resp.StatusCode)
+		} else if resp.StatusCode == http.StatusForbidden || resp.StatusCode == http.StatusUnauthorized {
+		   return true, fmt.Errorf("Does not have acces to create pipeline in the application '%s' \n",application)
 		}
 	}
 
 	if err != nil {
 		return true, fmt.Errorf("Encountered an error getting application %d\n",err)
 	} 
+	/*
 	prettyStr, _ := json.MarshalIndent(app["attributes"], "", " ")
     appdata := make(map[string]interface{})
     err = json.Unmarshal(prettyStr, &appdata)
@@ -210,13 +219,17 @@ func checkApplicationAuthorized(gateClient *gateclient.GatewayClient,application
     write = applicationConfig.Permissions.Write
     var execute []string  
     execute = applicationConfig.Permissions.Execute
-    groups := append(write, execute...)
+    groups := removeDuplicates(append(write, execute...))
     fmt.Printf("Application Groups: %s \n",groups)    
     input := make(map[string]interface{})
     input["User"] = gateClient.Config.Auth.Basic.Username
     input["Groups"] = groups
+    */
+    input := make(map[string]interface{})
+    input["UserName"] = gateClient.Config.Auth.Basic.Username
+    input["Application"] = application
     data, resp, err := capi.CheckApplicationAccess(input)
-   
+    //util.UI.JsonOutput(data, util.UI.OutputFormat)
     if err != nil {
 		return true, fmt.Errorf("Error encountered in compliance API %s \n",err)
 	} 
@@ -224,18 +237,45 @@ func checkApplicationAuthorized(gateClient *gateclient.GatewayClient,application
    if resp.StatusCode != http.StatusOK {
 		return true, fmt.Errorf("Encountered an error in Compliance API pipeline")
 	}
-     
+    type myResult struct{
+      UserName string
+      Applicaiton string
+      Groups []string
+    } 
+    var mydata myResult
     prettyStra, _ := json.MarshalIndent(data, "", " ")
-    compData := make(map[string]interface{})
-    err = json.Unmarshal(prettyStra, &compData)
-    jsonString, err := json.Marshal(compData["UserGroupRepositories"])
-    fmt.Println(string(jsonString))
-    if string(jsonString) == "null" {
+    err = json.Unmarshal(prettyStra, &mydata)
+   // compData := make(map[string]interface{})
+   // err = json.Unmarshal(prettyStra, &respData)
+   // jsonString, err := json.Marshal((compData["Groups"]))
+    //fmt.Println(string(jsonString))
+    if len(mydata.Groups)  == 0 {
       return true, fmt.Errorf("Does not have acces to create pipeline in the application %s \n",application)
     }
    
     return false, nil
 }
+func removeDuplicates(elements []string) []string {
+    // Use map to record duplicates as we find them.
+    encountered := map[string]bool{}
+    result := []string{}
 
+    for v := range elements {
+        if encountered[elements[v]] == true {
+            // Do not add duplicate.
+        } else {
+            // Record this element as an encountered element.
+            encountered[elements[v]] = true
+            // Append to result slice.
+            result = append(result, elements[v])
+        }
+    }
+    // Return the new slice.
+    return result
+}
+//func pipelienPlanExecution(pipeline interface{}) (interface{},error) { 
+	
+	 
+//}
 	
 

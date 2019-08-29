@@ -1,0 +1,9 @@
+application:
+    - name: my-app-sample
+      owneremail: sudhakar@opsmx.in
+      permissions: sra-dev,sra-qa
+      accounts: kubernetes,gce
+    - name: my-app-sample1
+      owneremail: darshan@opsmx.in
+      permissions: sra-dev,sra-qa
+      accounts: kubernetes,gce
