@@ -5,10 +5,10 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/sudhakaropsmx/spinmx/cmd/apponboard"
+	"github.com/sudhakaropsmx/spinmx/cmd/project"
 	"github.com/spinnaker/spin/cmd/application"
 	"github.com/spinnaker/spin/cmd/pipeline"
 	"github.com/spinnaker/spin/cmd/pipeline-template"
-	"github.com/spinnaker/spin/cmd/project"
 	"github.com/sudhakaropsmx/spinmx/version"
 	
 )
